@@ -1,6 +1,7 @@
 # services.py
 
 import re
+from datetime import date
 
 from db import mysql  
 
@@ -30,7 +31,7 @@ def registration(name,email,password,confirm_password,hint_question,hint_answer)
             cur.execute("insert into registration(name,email,password,date,hint_question,hint_answer) values(%s,%s,%s,current_date(),%s,%s)",(name,email,password,hint_question,hint_answer))
             con.commit()
             cur.close()
-            con.close()
+            con.close() 
             return True
         else:
             return False
