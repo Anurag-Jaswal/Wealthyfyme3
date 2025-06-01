@@ -56,7 +56,7 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="mb-4 text-success">Dashboard</h1>
+  <h1 class="mb-4 text-success">Welcome back <b><i>{{user_name}} !</i></b></h1>
   <a class="logout text-danger" href="{{ url_for('logout') }}">
     <ion-icon name="log-out-outline"></ion-icon>
     Logout
