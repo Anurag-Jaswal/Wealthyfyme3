@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField,SelectField
 from wtforms.validators import DataRequired, Email, EqualTo, Length,Regexp
 
 class LoginForm(FlaskForm):
@@ -23,5 +23,14 @@ class RegistrationForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email(message="Invalid email format"),Regexp(r'^\S+@\S+\.\S+$', message="Invalid email format")])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=6),Regexp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$',message="Password must include uppercase, lowercase, digit, and special character")])
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password', message="Passwords must match")])
+    hint_question = StringField('Hint Question (e.g. Your pet name)', validators=[DataRequired(), Length(max=100)])
+    hint_answer = StringField('Hint Answer', validators=[DataRequired(), Length(max=100)])
     accept_terms = BooleanField('I agree to the Terms & Conditions', validators=[DataRequired()])
     submit = SubmitField('Register')    
+
+
+class HintAnswerForm(FlaskForm):
+    hint_answer = StringField('Answer to Hint Question', validators=[DataRequired(), Length(max=100)])
+    password = PasswordField('New Password', validators=[DataRequired(),Length(min=6),Regexp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])',message="Password must include uppercase, lowercase, digit, and special character")])
+    confirm_password = PasswordField('Confirm Password', validators=[DataRequired(),EqualTo('password', message="Passwords must match")])
+    submit = SubmitField('Reset Password')

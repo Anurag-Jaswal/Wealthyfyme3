@@ -74,6 +74,17 @@
           {{ form.confirm_password(class="form-control", placeholder="Retype your password") }}
         </div>
 
+        <div class="mb-3">
+          {{ form.hint_question.label(class="form-label") }}
+          {{ form.hint_question(class="form-control", placeholder="e.g. What is your pet’s name?") }}
+        </div>
+
+        <div class="mb-3">
+          {{ form.hint_answer.label(class="form-label") }}
+          {{ form.hint_answer(class="form-control", placeholder="Enter your answer") }}
+        </div>
+
+
         <div class="mb-3 form-check">
           {{ form.accept_terms(class="form-check-input") }}
           {{ form.accept_terms.label(class="form-check-label") }}

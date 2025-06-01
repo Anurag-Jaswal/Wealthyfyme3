@@ -1,5 +1,5 @@
 from flask import Flask, render_template, redirect, url_for, request, session, flash, send_from_directory
-from forms import LoginForm, RegistrationForm, ForgotPasswordForm,ResetPasswordForm
+from forms import LoginForm, RegistrationForm, ForgotPasswordForm,ResetPasswordForm,HintAnswerForm
 from config import Config
 from werkzeug.utils import secure_filename
 from db import mysql
@@ -38,8 +38,8 @@ def home():
 
 
 # Twilio config
-TWILIO_ACCOUNT_SID = 'AC3dd54a862fc10fcf2284f95b56a24'
-TWILIO_AUTH_TOKEN = '7299e981e7d7a6f36b7ac982e80c3'
+TWILIO_ACCOUNT_SID = 'AC3dd54a862fc10fcf2284f9508cb56a24'
+TWILIO_AUTH_TOKEN = '7299e981e7d7a6f36befe7ac982e80c3'
 TWILIO_PHONE_NUMBER = '+16814413892'
 
 twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
@@ -66,30 +66,68 @@ def login():
     return render_template("login.html", form=form, msg=msg)
 
 
-
+from MySQLdb.cursors import DictCursor  # You already imported this, so use it
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
-    form = ForgotPasswordForm()
-    msg = None
-    if form.validate_on_submit():
-        email = form.email.data
-        user = get_user_by_email(email)
-        if user:
-            otp = random.randint(100000, 999999)
-            try:
-                print(f"Sending OTP to {user['phone']}")
-                send_otp_sms(user['phone'], otp)
-                session['reset_email'] = user['email']
-                session['reset_otp'] = str(otp)
-                msg = 'sent'
-                return redirect(url_for('verify_otp'))
-            except Exception as e:
-                print("Failed to send OTP:", e)
-                msg = 'error'
-        else:
-            msg = 'not_found'
-    return render_template('forgot_password.html', form=form, msg=msg)
+    forgot_form = ForgotPasswordForm()
+    hint_form = HintAnswerForm()
+
+    if 'step' not in session:
+        session['step'] = 'email'
+
+    if session['step'] == 'email':
+        if forgot_form.validate_on_submit():
+            email = forgot_form.email.data.strip()
+
+            cur = mysql.connection.cursor(DictCursor)
+            cur.execute("SELECT * FROM login WHERE email = %s", (email,))
+            user = cur.fetchone()
+            cur.close()
+
+            if user and 'hint_question' in user:
+                session['reset_email'] = email
+                session['hint_question'] = user['hint_question']
+                session['step'] = 'hint'
+                return redirect(url_for('forgot_password'))
+            else:
+                flash("No user found with that email or missing hint question.", "danger")
+
+        return render_template("forgot_password.html", forgot_form=forgot_form, hint_form=None, step="email")
+
+    elif session['step'] == 'hint':
+        if hint_form.validate_on_submit():
+            answer = hint_form.hint_answer.data.strip().lower()
+            new_password = hint_form.password.data.strip()
+
+            cur = mysql.connection.cursor(DictCursor)
+            cur.execute("SELECT hint_answer FROM login WHERE email = %s", (session['reset_email'],))
+            user = cur.fetchone()
+            cur.close()
+
+            if user and user['hint_answer'].strip().lower() == answer:
+                cur = mysql.connection.cursor()
+                cur.execute("UPDATE login SET password = %s WHERE email = %s", (new_password, session['reset_email']))
+                mysql.connection.commit()
+                cur.close()
+
+                session.pop('step', None)
+                session.pop('reset_email', None)
+                session.pop('hint_question', None)
+
+                
+                return redirect(url_for('login'))
+            else:
+                flash("Incorrect hint answer. Please try again.", "danger")
+
+        return render_template("forgot_password.html", forgot_form=None, hint_form=hint_form,
+                               hint_question=session.get('hint_question'), step="hint")
+
+    # Fallback if session state breaks
+    session.pop('step', None)
+    flash("Something went wrong. Please try again.", "danger")
+    return redirect(url_for('forgot_password'))
+
 
 
 def get_user_by_email(email):
@@ -177,9 +215,11 @@ def register():
             email = form.email.data
             password = form.password.data
             confirm_password = form.confirm_password.data
-
-            res = registration(name, email, password, confirm_password)
+            hint_question = form.hint_question.data
+            hint_answer = form.hint_answer.data
+            res = registration(name, email, password, confirm_password,hint_question,hint_answer)
             if res:
+                flash('Account created successfully!', 'success')
                 return redirect(url_for('login'))
             else:
                 session['msg'] = "Please, Enter a Valid Email !!!"
