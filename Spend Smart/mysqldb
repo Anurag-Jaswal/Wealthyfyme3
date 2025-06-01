@@ -2,6 +2,19 @@ use wealthyinfyme;
 show databases;
 create database wealthyinfyme;
 
+
+drop table login;
+
+
+CREATE TABLE login (
+    S_NO INT PRIMARY KEY AUTO_INCREMENT,
+    email VARCHAR(50) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    hint_question VARCHAR(255) NOT NULL,
+    hint_answer VARCHAR(255) NOT NULL
+);
+
+
 create table login(
 	S_NO int primary key auto_increment,
     email varchar(50) not null,
@@ -36,12 +49,10 @@ FOR EACH ROW
 BEGIN
     INSERT INTO login (email, password) 
     VALUES (NEW.email, NEW.password);
-END
+END$$
 //
 
 DELIMITER ;
-
-
 
 CREATE TABLE transactions (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -83,4 +94,26 @@ DELIMITER ;
 update  login set name = "Anurag Jaswal" where S_NO=3;
 
 select * from login;
+select * from registration;
+
+ALTER TABLE registration
+ADD COLUMN hint_question VARCHAR(255),
+ADD COLUMN hint_answer VARCHAR(255);
+
+
+drop trigger after_registration_insert;
+
+
+DELIMITER //
+
+CREATE TRIGGER after_registration_insert
+AFTER INSERT ON registration
+FOR EACH ROW
+BEGIN
+    INSERT INTO login (name, email, password, hint_question, hint_answer) 
+    VALUES (NEW.name, NEW.email, NEW.password, NEW.hint_question, NEW.hint_answer);
+END;
+//
+
+DELIMITER ;
 
